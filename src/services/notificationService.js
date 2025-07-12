@@ -5,35 +5,34 @@ const { Notification } = require('../models');
 // Initialize Firebase Admin SDK
 let serviceAccount;
 
-// Check if we're in production/deployment environment
-if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
-  // Use environment variables (recommended for production)
+if (process.env.NODE_ENV === 'production') {
+  // Use environment variables in production
   serviceAccount = {
-    type: "service_account",
-    project_id: process.env.FIREBASE_PROJECT_ID || "chickzone-ed0ee",
+    type: 'service_account',
+    project_id: process.env.FIREBASE_PROJECT_ID,
     private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
-    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    private_key: process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined,
     client_email: process.env.FIREBASE_CLIENT_EMAIL,
     client_id: process.env.FIREBASE_CLIENT_ID,
-    auth_uri: "https://accounts.google.com/o/oauth2/auth",
-    token_uri: "https://oauth2.googleapis.com/token",
-    auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-    client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${encodeURIComponent(process.env.FIREBASE_CLIENT_EMAIL)}`,
-    universe_domain: "googleapis.com"
+    auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+    token_uri: 'https://oauth2.googleapis.com/token',
+    auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
+    client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL,
+    universe_domain: 'googleapis.com'
   };
 } else {
-  // Fallback to JSON file for local development
-  try {
-    serviceAccount = require('../config/firebase-service-account.json');
-  } catch (error) {
-    console.error('Firebase service account configuration not found. Please set environment variables or add firebase-service-account.json file.');
-    throw new Error('Firebase configuration missing. Please set FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL, and other required environment variables.');
-  }
+  // Use JSON file in development
+  serviceAccount = require('../config/firebase-service-account.json');
+}
+
+// Validate required fields
+if (!serviceAccount.project_id || !serviceAccount.private_key || !serviceAccount.client_email) {
+  throw new Error('Firebase configuration is incomplete. Please check your environment variables.');
 }
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  projectId: process.env.FIREBASE_PROJECT_ID || serviceAccount.project_id || 'chickzone-ed0ee'
+  projectId: serviceAccount.project_id
 });
 
 class NotificationService {
