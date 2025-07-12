@@ -5,7 +5,13 @@ const { Notification } = require('../models');
 // Initialize Firebase Admin SDK
 let serviceAccount;
 
-if (process.env.NODE_ENV === 'production') {
+// Check if we should use environment variables (production) or JSON file (development)
+const useEnvVars = process.env.NODE_ENV === 'production' || 
+                   process.env.FIREBASE_PROJECT_ID || 
+                   process.env.FIREBASE_PRIVATE_KEY || 
+                   process.env.FIREBASE_CLIENT_EMAIL;
+
+if (useEnvVars) {
   // Use environment variables in production
   serviceAccount = {
     type: 'service_account',
@@ -21,8 +27,12 @@ if (process.env.NODE_ENV === 'production') {
     universe_domain: 'googleapis.com'
   };
 } else {
-  // Use JSON file in development
-  serviceAccount = require('../config/firebase-service-account.json');
+  // Use JSON file in development (if it exists)
+  try {
+    serviceAccount = require('../config/firebase-service-account.json');
+  } catch (error) {
+    throw new Error('Firebase service account JSON file not found and no environment variables provided. Please check your configuration.');
+  }
 }
 
 // Validate required fields
