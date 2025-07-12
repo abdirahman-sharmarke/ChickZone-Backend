@@ -13,6 +13,18 @@ const notificationRoutes = require('./src/routes/notificationRoutes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Error handling for unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit the process, just log the error
+});
+
+// Error handling for uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  // Don't exit the process, just log the error
+});
+
 // Middleware
 app.use(helmet());
 app.use(cors({
@@ -46,11 +58,16 @@ async function startServer() {
     await db.sequelize.sync();
     console.log('✅ Database synchronized successfully.');
     
-    app.listen(PORT, '0.0.0.0', () => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 ChickZone server running on port ${PORT}`);
       console.log(`✨ API endpoints available at:`);
       console.log(`   - http://localhost:${PORT}/api`);
       console.log(`   - http://172.16.0.72:${PORT}/api`);
+    });
+
+    // Handle server errors
+    server.on('error', (error) => {
+      console.error('❌ Server error:', error);
     });
 
   } catch (error) {
@@ -60,3 +77,8 @@ async function startServer() {
 }
 
 startServer();
+
+// Keep the process alive
+setInterval(() => {
+  // This is a heartbeat to keep the process running
+}, 60000); // Every minute
